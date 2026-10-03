@@ -131,6 +131,7 @@ p{margin:0}
 .d1{transition-delay:.12s}.d2{transition-delay:.24s}.d3{transition-delay:.36s}
 
 section{position:relative}
+#boliger,#erhverv,#ejendomme,#anmeldelser,#beliggenhed,#kontakt,footer.site{content-visibility:auto;contain-intrinsic-size:auto 900px}
 .sec{padding:clamp(80px,12vw,160px) 0}
 .kicker{font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ruby-ink)}
 .h2{font-size:clamp(34px,4.6vw,64px)}
@@ -569,16 +570,18 @@ footer.site .bottom{margin-top:48px;padding-top:22px;border-top:1px solid #2c2c2
     var vh = window.innerHeight, sy = window.pageYOffset, damp = mobile.matches ? 0.6 : 1;
     if (sy === lastY && vh === lastH){ if (onScreen.size) requestAnimationFrame(tick); else running = false; return; }
     lastY = sy; lastH = vh;
+    // read every host rect first, then write transforms: no forced reflow between layers
+    var rects = new Map();
+    onScreen.forEach(function(h){ rects.set(h, h.getBoundingClientRect()); });
     layers.forEach(function(l){
-      if (!onScreen.has(l.host)) return;
-      var r = l.host.getBoundingClientRect();
+      var r = rects.get(l.host);
+      if (!r) return;
       if (l.drift){
         var p = Math.min(1, Math.max(0, (vh - r.top) / (vh + r.height)));
         l.el.style.transform = 'translate3d(' + (l.drift * (p - 0.5) * window.innerWidth * 0.28).toFixed(1) + 'px,0,0)';
         return;
       }
-      var d = l.depth * damp;
-      var y;
+      var d = l.depth * damp, y;
       if (l.host.classList.contains('hero')) y = sy * d;
       else {
         y = ((r.top + r.height / 2) - vh / 2) * -d;
